@@ -39,6 +39,53 @@ namespace Datadog.Trace.Tests
         }
 
         [Fact]
+        public void WebRequest_ExtractHeaderTags_ReturnsEmptyWhenEmptyInput()
+        {
+            IHeadersCollection headers = WebRequest.CreateHttp("http://localhost").Headers.Wrap();
+            var tagsFromHeader = SpanContextPropagator.Instance.ExtractHeaderTags(headers, new Dictionary<string, string>());
+
+            Assert.NotNull(tagsFromHeader);
+            Assert.Empty(tagsFromHeader);
+        }
+
+        [Fact]
+        public void WebRequest_ExtractHeaderTags_MatchesCaseInsensitive()
+        {
+            // Initialize constants
+            const string customHeader1Name = "dd-custom-header1";
+            const string customHeader1Value = "match1";
+            const string customHeader1TagName = "custom-header1-tag";
+
+            const string customHeader2Name = "DD-CUSTOM-HEADER-MISMATCHING-CASE";
+            const string customHeader2Value = "match2";
+            const string customHeader2TagName = "custom-header2-tag";
+            string customHeader2LowercaseHeaderName = customHeader2Name.ToLowerInvariant();
+
+            // Initialize WebRequest and add headers
+            HttpWebRequest webRequest = WebRequest.CreateHttp("http://localhost");
+            webRequest.Headers.Add(customHeader1Name, customHeader1Value);
+            webRequest.Headers.Add(customHeader2Name, customHeader2Value);
+
+            // Initialize header tag arguments
+            var headerTags = new Dictionary<string, string>();
+            headerTags.Add(customHeader1Name, customHeader1TagName);
+            headerTags.Add(customHeader2LowercaseHeaderName, customHeader2TagName);
+
+            // Set expectations
+            var expectedResults = new Dictionary<string, string>();
+            expectedResults.Add(customHeader1TagName, customHeader1Value);
+            expectedResults.Add(customHeader2TagName, customHeader2Value);
+
+            // Test
+            IHeadersCollection headers = webRequest.Headers.Wrap();
+            var tagsFromHeader = SpanContextPropagator.Instance.ExtractHeaderTags(headers, headerTags);
+
+            // Assert
+            Assert.NotNull(tagsFromHeader);
+            Assert.Equal(expectedResults, tagsFromHeader);
+        }
+
+        [Fact]
         public void NameValueCollection_InjectExtract_Identity()
         {
             const int traceId = 9;
@@ -60,6 +107,53 @@ namespace Datadog.Trace.Tests
         }
 
         [Fact]
+        public void NameValueCollection_ExtractHeaderTags_ReturnsEmptyWhenEmptyInput()
+        {
+            IHeadersCollection headers = new NameValueCollection().Wrap();
+            var tagsFromHeader = SpanContextPropagator.Instance.ExtractHeaderTags(headers, new Dictionary<string, string>());
+
+            Assert.NotNull(tagsFromHeader);
+            Assert.Empty(tagsFromHeader);
+        }
+
+        [Fact]
+        public void NameValueCollection_ExtractHeaderTags_MatchesCaseInsensitive()
+        {
+            // Initialize constants
+            const string customHeader1Name = "dd-custom-header1";
+            const string customHeader1Value = "match1";
+            const string customHeader1TagName = "custom-header1-tag";
+
+            const string customHeader2Name = "DD-CUSTOM-HEADER-MISMATCHING-CASE";
+            const string customHeader2Value = "match2";
+            const string customHeader2TagName = "custom-header2-tag";
+            string customHeader2LowercaseHeaderName = customHeader2Name.ToLowerInvariant();
+
+            // Initialize WebRequest and add headers
+            var nameValueCollection = new NameValueCollection();
+            nameValueCollection.Add(customHeader1Name, customHeader1Value);
+            nameValueCollection.Add(customHeader2Name, customHeader2Value);
+
+            // Initialize header tag arguments
+            var headerTags = new Dictionary<string, string>();
+            headerTags.Add(customHeader1Name, customHeader1TagName);
+            headerTags.Add(customHeader2LowercaseHeaderName, customHeader2TagName);
+
+            // Set expectations
+            var expectedResults = new Dictionary<string, string>();
+            expectedResults.Add(customHeader1TagName, customHeader1Value);
+            expectedResults.Add(customHeader2TagName, customHeader2Value);
+
+            // Test
+            IHeadersCollection headers = nameValueCollection.Wrap();
+            var tagsFromHeader = SpanContextPropagator.Instance.ExtractHeaderTags(headers, headerTags);
+
+            // Assert
+            Assert.NotNull(tagsFromHeader);
+            Assert.Equal(expectedResults, tagsFromHeader);
+        }
+
+        [Fact]
         public void DictionaryHeadersCollection_InjectExtract_Identity()
         {
             const int traceId = 9;
@@ -78,6 +172,52 @@ namespace Datadog.Trace.Tests
             Assert.Equal(context.TraceId, resultContext.TraceId);
             Assert.Equal(context.SamplingPriority, resultContext.SamplingPriority);
             Assert.Equal(context.Origin, resultContext.Origin);
+        }
+
+        [Fact]
+        public void DictionaryHeadersCollection_ExtractHeaderTags_ReturnsEmptyWhenEmptyInput()
+        {
+            IHeadersCollection headers = new DictionaryHeadersCollection();
+            var tagsFromHeader = SpanContextPropagator.Instance.ExtractHeaderTags(headers, new Dictionary<string, string>());
+
+            Assert.NotNull(tagsFromHeader);
+            Assert.Empty(tagsFromHeader);
+        }
+
+        [Fact]
+        public void DictionaryHeadersCollection_ExtractHeaderTags_MatchesCaseInsensitive()
+        {
+            // Initialize constants
+            const string customHeader1Name = "dd-custom-header1";
+            const string customHeader1Value = "match1";
+            const string customHeader1TagName = "custom-header1-tag";
+
+            const string customHeader2Name = "DD-CUSTOM-HEADER-MISMATCHING-CASE";
+            const string customHeader2Value = "match2";
+            const string customHeader2TagName = "custom-header2-tag";
+            string customHeader2LowercaseHeaderName = customHeader2Name.ToLowerInvariant();
+
+            // Initialize WebRequest and add headers
+            var dictionaryHeadersCollection = new DictionaryHeadersCollection();
+            dictionaryHeadersCollection.Add(customHeader1Name, customHeader1Value);
+            dictionaryHeadersCollection.Add(customHeader2Name, customHeader2Value);
+
+            // Initialize header tag arguments
+            var headerTags = new Dictionary<string, string>();
+            headerTags.Add(customHeader1Name, customHeader1TagName);
+            headerTags.Add(customHeader2LowercaseHeaderName, customHeader2TagName);
+
+            // Set expectations
+            var expectedResults = new Dictionary<string, string>();
+            expectedResults.Add(customHeader1TagName, customHeader1Value);
+            expectedResults.Add(customHeader2TagName, customHeader2Value);
+
+            // Test
+            var tagsFromHeader = SpanContextPropagator.Instance.ExtractHeaderTags(dictionaryHeadersCollection, headerTags);
+
+            // Assert
+            Assert.NotNull(tagsFromHeader);
+            Assert.Equal(expectedResults, tagsFromHeader);
         }
 
         [Theory]
